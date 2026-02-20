@@ -1,0 +1,7 @@
+{
+	"name": "@hackathon/config",
+	"private": true,
+	"type": "module",
+	"exports": {
+	}
+}
