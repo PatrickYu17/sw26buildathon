@@ -10,13 +10,16 @@
   "scripts": {
     "build": "turbo run build",
     "build:backend": "turbo run build --filter=backend",
+    "build:debug": "turbo run build --filter=debug",
     "build:web": "turbo run build --filter=web",
     "dev": "turbo run dev",
     "dev:backend": "turbo run dev --filter=backend",
+    "dev:debug": "turbo run dev --filter=debug",
     "dev:web": "turbo run dev --filter=web",
     "lint": "turbo run lint",
     "clean": "turbo run clean",
     "start:backend": "turbo run start --filter=backend",
+    "start:debug": "turbo run start --filter=debug",
     "start:web": "turbo run start --filter=web"
   },
   "dependencies": {},

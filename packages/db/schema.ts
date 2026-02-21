@@ -13,12 +13,12 @@ export const user = pgTable(
     id: text("id").primaryKey(),
     name: text("name").notNull(),
     email: text("email").notNull(),
-    emailVerified: boolean("email_verified").default(false).notNull(),
+    email_verified: boolean("email_verified").default(false).notNull(),
     image: text("image"),
-    createdAt: timestamp("created_at", { withTimezone: true })
+    created_at: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
+    updated_at: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
   },
@@ -29,24 +29,24 @@ export const session = pgTable(
   "session",
   {
     id: text("id").primaryKey(),
-    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    expires_at: timestamp("expires_at", { withTimezone: true }).notNull(),
     token: text("token").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true })
+    created_at: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
+    updated_at: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
-    ipAddress: text("ip_address"),
-    userAgent: text("user_agent"),
-    userId: text("user_id")
+    ip_address: text("ip_address"),
+    user_agent: text("user_agent"),
+    user_id: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
   },
   (table) => [
     uniqueIndex("session_token_unique_idx").on(table.token),
-    index("session_user_id_idx").on(table.userId),
-    index("session_expires_at_idx").on(table.expiresAt),
+    index("session_user_id_idx").on(table.user_id),
+    index("session_expires_at_idx").on(table.expires_at),
   ],
 );
 
@@ -54,35 +54,35 @@ export const account = pgTable(
   "account",
   {
     id: text("id").primaryKey(),
-    accountId: text("account_id").notNull(),
-    providerId: text("provider_id").notNull(),
-    userId: text("user_id")
+    account_id: text("account_id").notNull(),
+    provider_id: text("provider_id").notNull(),
+    user_id: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    accessToken: text("access_token"),
-    refreshToken: text("refresh_token"),
-    idToken: text("id_token"),
-    accessTokenExpiresAt: timestamp("access_token_expires_at", {
+    access_token: text("access_token"),
+    refresh_token: text("refresh_token"),
+    id_token: text("id_token"),
+    access_token_expires_at: timestamp("access_token_expires_at", {
       withTimezone: true,
     }),
-    refreshTokenExpiresAt: timestamp("refresh_token_expires_at", {
+    refresh_token_expires_at: timestamp("refresh_token_expires_at", {
       withTimezone: true,
     }),
     scope: text("scope"),
     password: text("password"),
-    createdAt: timestamp("created_at", { withTimezone: true })
+    created_at: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
+    updated_at: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
   },
   (table) => [
     uniqueIndex("account_provider_account_unique_idx").on(
-      table.providerId,
-      table.accountId,
+      table.provider_id,
+      table.account_id,
     ),
-    index("account_user_id_idx").on(table.userId),
+    index("account_user_id_idx").on(table.user_id),
   ],
 );
 
@@ -92,11 +92,11 @@ export const verification = pgTable(
     id: text("id").primaryKey(),
     identifier: text("identifier").notNull(),
     value: text("value").notNull(),
-    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true })
+    expires_at: timestamp("expires_at", { withTimezone: true }).notNull(),
+    created_at: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
+    updated_at: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
   },
