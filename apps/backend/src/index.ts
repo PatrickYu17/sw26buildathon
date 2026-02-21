@@ -9,6 +9,8 @@ import { env } from "./lib/env";
 import { requireAuth } from "./middleware/auth";
 import { errorHandler, notFound } from "./middleware/error-handler";
 import { requestId } from "./middleware/request-id";
+import { aiRouter } from "./routes/ai.routes";
+import { conversationsRouter } from "./routes/conversations.routes";
 import { authRouter } from "./routes/auth.routes";
 import { authDebugRouter } from "./routes/auth-debug.routes";
 import { protectedRouter } from "./routes/protected.routes";
@@ -46,11 +48,22 @@ const authRateLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const aiRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 30,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { error: "ai_rate_limit", message: "Too many AI requests, please try again later" },
+  keyGenerator: (req) => req.auth?.user?.id || req.ip || "unknown",
+});
+
+const defaultJsonParser = express.json({ limit: "1mb" });
+const aiJsonParser = express.json({ limit: "25mb" });
+
 app.use(requestId);
 app.use("/api/auth", authRateLimiter);
 app.all("/api/auth", toNodeHandler(auth));
 app.all("/api/auth/*", toNodeHandler(auth));
-app.use(express.json({ limit: "1mb" }));
 
 app.get("/health", (_req, res) => {
   res.status(200).json({
@@ -66,12 +79,26 @@ app.get("/", (_req, res) => {
   });
 });
 
-app.use("/api/v1/public", publicRouter);
-app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/public", defaultJsonParser, publicRouter);
+app.use("/api/v1/auth", defaultJsonParser, authRouter);
 if (env.nodeEnv !== "production") {
-  app.use("/api/v1/debug/auth", authDebugRouter);
+  app.use("/api/v1/debug/auth", defaultJsonParser, authDebugRouter);
 }
-app.use("/api/v1", requireAuth, protectedRouter);
+app.use(
+  "/api/v1/ai/conversations",
+  requireAuth,
+  aiRateLimiter,
+  aiJsonParser,
+  conversationsRouter,
+);
+app.use(
+  "/api/v1/ai",
+  requireAuth,
+  aiRateLimiter,
+  aiJsonParser,
+  aiRouter,
+);
+app.use("/api/v1", defaultJsonParser, requireAuth, protectedRouter);
 
 app.use(notFound);
 app.use(errorHandler);
