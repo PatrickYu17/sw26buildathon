@@ -214,273 +214,277 @@ export default function DebugAuthPage() {
 
   return (
     <main className="page">
-      <section className="panel">
-        <h1>Auth Debug UI</h1>
-        <p>
-          Standalone frontend for testing backend auth routes. It does not share
-          state or code with the main web app.
-        </p>
+      <section className="controls-column">
+        <section className="panel">
+          <h1>Auth Debug UI</h1>
+          <p>
+            Standalone frontend for testing backend auth routes. It does not share
+            state or code with the main web app.
+          </p>
 
-        <label className="field">
-          <span>Backend URL</span>
-          <input
-            value={backendUrl}
-            onChange={(e) => setBackendUrl(e.target.value)}
-            placeholder="http://localhost:3001"
-          />
-        </label>
+          <label className="field">
+            <span>Backend URL</span>
+            <input
+              value={backendUrl}
+              onChange={(e) => setBackendUrl(e.target.value)}
+              placeholder="http://localhost:3001"
+            />
+          </label>
 
-        {/* Auth forms */}
-        <div className="grid two">
-          <form className="card" onSubmit={onSubmitSignup}>
-            <h2>Create Account</h2>
-            <label className="field">
-              <span>Name</span>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-            </label>
-            <label className="field">
-              <span>Email</span>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </label>
-            <label className="field">
-              <span>Password</span>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                minLength={8}
-                maxLength={128}
-                required
-              />
-            </label>
-            <button disabled={loading} type="submit">
-              {loading ? "Working..." : "Sign Up"}
+          {/* Auth forms */}
+          <div className="grid two">
+            <form className="card" onSubmit={onSubmitSignup}>
+              <h2>Create Account</h2>
+              <label className="field">
+                <span>Name</span>
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+              </label>
+              <label className="field">
+                <span>Email</span>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </label>
+              <label className="field">
+                <span>Password</span>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  minLength={8}
+                  maxLength={128}
+                  required
+                />
+              </label>
+              <button disabled={loading} type="submit">
+                {loading ? "Working..." : "Sign Up"}
+              </button>
+            </form>
+
+            <form className="card" onSubmit={onSubmitSignin}>
+              <h2>Sign In</h2>
+              <label className="field">
+                <span>Email</span>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </label>
+              <label className="field">
+                <span>Password</span>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </label>
+              <button disabled={loading} type="submit">
+                {loading ? "Working..." : "Sign In"}
+              </button>
+            </form>
+          </div>
+        </section>
+
+        {/* better-auth session endpoints */}
+        <section className="panel">
+          <h2>Session (better-auth)</h2>
+          <div className="grid three">
+            <button
+              disabled={loading}
+              onClick={() => callApi("Get Session", "/api/auth/get-session", "GET")}
+            >
+              Get Session
             </button>
-          </form>
-
-          <form className="card" onSubmit={onSubmitSignin}>
-            <h2>Sign In</h2>
-            <label className="field">
-              <span>Email</span>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </label>
-            <label className="field">
-              <span>Password</span>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </label>
-            <button disabled={loading} type="submit">
-              {loading ? "Working..." : "Sign In"}
+            <button
+              disabled={loading}
+              onClick={() => callApi("Sign Out", "/api/auth/sign-out", "POST")}
+            >
+              Sign Out
             </button>
-          </form>
-        </div>
+          </div>
+        </section>
+
+        {/* Auth diagnostic routes (/api/v1/auth) */}
+        <section className="panel">
+          <h2>Auth Routes <span className="badge">requires auth</span></h2>
+          <div className="grid three">
+            <button
+              disabled={loading}
+              onClick={() => callApi("Auth Status", "/api/v1/auth/status", "GET")}
+            >
+              Auth Status
+            </button>
+            <button
+              disabled={loading}
+              onClick={() => callApi("Auth Me", "/api/v1/auth/me", "GET")}
+            >
+              Auth Me
+            </button>
+            <button
+              disabled={loading}
+              onClick={() => callApi("Diagnostics", "/api/v1/auth/diagnostics", "GET")}
+            >
+              Diagnostics
+            </button>
+            <button
+              disabled={loading}
+              onClick={() =>
+                callApi(
+                  "Diagnostics Sessions",
+                  "/api/v1/auth/diagnostics/sessions?limit=10",
+                  "GET",
+                )
+              }
+            >
+              Sessions
+            </button>
+            <button
+              disabled={loading}
+              onClick={() =>
+                callApi("Diagnostics Accounts", "/api/v1/auth/diagnostics/accounts", "GET")
+              }
+            >
+              Accounts
+            </button>
+          </div>
+        </section>
+
+        {/* Public & health routes */}
+        <section className="panel">
+          <h2>Public Routes</h2>
+          <div className="grid three">
+            <button
+              disabled={loading}
+              onClick={() => callApi("Health", "/health", "GET")}
+            >
+              Health Check
+            </button>
+            <button
+              disabled={loading}
+              onClick={() => callApi("Public Ping", "/api/v1/public/ping", "GET")}
+            >
+              Public Ping
+            </button>
+          </div>
+        </section>
+
+        {/* Protected routes (/api/v1) */}
+        <section className="panel">
+          <h2>Protected Routes <span className="badge">requires auth</span></h2>
+          <div className="grid three">
+            <button
+              disabled={loading}
+              onClick={() => callApi("Protected Me", "/api/v1/me", "GET")}
+            >
+              /me
+            </button>
+            <button
+              disabled={loading}
+              onClick={() => callApi("Auth Check", "/api/v1/auth-check", "GET")}
+            >
+              /auth-check
+            </button>
+            <button
+              disabled={loading}
+              onClick={() => callApi("List People", "/api/v1/people", "GET")}
+            >
+              GET /people
+            </button>
+            <button
+              disabled={loading}
+              onClick={() =>
+                callApi("Create Person", "/api/v1/people", "POST", {
+                  name: "Debug Person",
+                  relationshipType: "friend",
+                })
+              }
+            >
+              POST /people
+            </button>
+          </div>
+        </section>
+
+        {/* Debug routes (disabled in production) */}
+        <section className="panel">
+          <h2>Debug Routes <span className="badge warn">dev only</span></h2>
+          <p className="hint">
+            These routes are disabled when the backend runs with NODE_ENV=production.
+            A 404 confirms the guard is working.
+          </p>
+          <div className="grid three">
+            <button
+              disabled={loading}
+              onClick={() =>
+                callApi("Debug Session", "/api/v1/debug/auth/session", "GET")
+              }
+            >
+              Debug Session
+            </button>
+          </div>
+        </section>
+
+        {/* Security testing */}
+        <section className="panel">
+          <h2>Security Tests</h2>
+          <div className="grid three">
+            <button disabled={loading} onClick={checkSecurityHeaders}>
+              Check Security Headers
+            </button>
+            <button disabled={loading} onClick={testRateLimit}>
+              Test Rate Limit (25 reqs)
+            </button>
+          </div>
+        </section>
       </section>
 
-      {/* better-auth session endpoints */}
-      <section className="panel">
-        <h2>Session (better-auth)</h2>
-        <div className="grid three">
-          <button
-            disabled={loading}
-            onClick={() => callApi("Get Session", "/api/auth/get-session", "GET")}
-          >
-            Get Session
-          </button>
-          <button
-            disabled={loading}
-            onClick={() => callApi("Sign Out", "/api/auth/sign-out", "POST")}
-          >
-            Sign Out
-          </button>
-        </div>
-      </section>
-
-      {/* Auth diagnostic routes (/api/v1/auth) */}
-      <section className="panel">
-        <h2>Auth Routes <span className="badge">requires auth</span></h2>
-        <div className="grid three">
-          <button
-            disabled={loading}
-            onClick={() => callApi("Auth Status", "/api/v1/auth/status", "GET")}
-          >
-            Auth Status
-          </button>
-          <button
-            disabled={loading}
-            onClick={() => callApi("Auth Me", "/api/v1/auth/me", "GET")}
-          >
-            Auth Me
-          </button>
-          <button
-            disabled={loading}
-            onClick={() => callApi("Diagnostics", "/api/v1/auth/diagnostics", "GET")}
-          >
-            Diagnostics
-          </button>
-          <button
-            disabled={loading}
-            onClick={() =>
-              callApi(
-                "Diagnostics Sessions",
-                "/api/v1/auth/diagnostics/sessions?limit=10",
-                "GET",
-              )
-            }
-          >
-            Sessions
-          </button>
-          <button
-            disabled={loading}
-            onClick={() =>
-              callApi("Diagnostics Accounts", "/api/v1/auth/diagnostics/accounts", "GET")
-            }
-          >
-            Accounts
-          </button>
-        </div>
-      </section>
-
-      {/* Public & health routes */}
-      <section className="panel">
-        <h2>Public Routes</h2>
-        <div className="grid three">
-          <button
-            disabled={loading}
-            onClick={() => callApi("Health", "/health", "GET")}
-          >
-            Health Check
-          </button>
-          <button
-            disabled={loading}
-            onClick={() => callApi("Public Ping", "/api/v1/public/ping", "GET")}
-          >
-            Public Ping
-          </button>
-        </div>
-      </section>
-
-      {/* Protected routes (/api/v1) */}
-      <section className="panel">
-        <h2>Protected Routes <span className="badge">requires auth</span></h2>
-        <div className="grid three">
-          <button
-            disabled={loading}
-            onClick={() => callApi("Protected Me", "/api/v1/me", "GET")}
-          >
-            /me
-          </button>
-          <button
-            disabled={loading}
-            onClick={() => callApi("Auth Check", "/api/v1/auth-check", "GET")}
-          >
-            /auth-check
-          </button>
-          <button
-            disabled={loading}
-            onClick={() => callApi("List People", "/api/v1/people", "GET")}
-          >
-            GET /people
-          </button>
-          <button
-            disabled={loading}
-            onClick={() =>
-              callApi("Create Person", "/api/v1/people", "POST", {
-                name: "Debug Person",
-                relationshipType: "friend",
-              })
-            }
-          >
-            POST /people
-          </button>
-        </div>
-      </section>
-
-      {/* Debug routes (disabled in production) */}
-      <section className="panel">
-        <h2>Debug Routes <span className="badge warn">dev only</span></h2>
-        <p className="hint">
-          These routes are disabled when the backend runs with NODE_ENV=production.
-          A 404 confirms the guard is working.
-        </p>
-        <div className="grid three">
-          <button
-            disabled={loading}
-            onClick={() =>
-              callApi("Debug Session", "/api/v1/debug/auth/session", "GET")
-            }
-          >
-            Debug Session
-          </button>
-        </div>
-      </section>
-
-      {/* Security testing */}
-      <section className="panel">
-        <h2>Security Tests</h2>
-        <div className="grid three">
-          <button disabled={loading} onClick={checkSecurityHeaders}>
-            Check Security Headers
-          </button>
-          <button disabled={loading} onClick={testRateLimit}>
-            Test Rate Limit (25 reqs)
-          </button>
-        </div>
-      </section>
-
-      {/* Response output */}
-      <section className="panel output">
-        <h2>Last Response</h2>
-        {!result ? (
-          <p>No request made yet.</p>
-        ) : (
-          <>
-            <p>
-              <strong>{result.name}</strong> | status: {result.status} | ok:{" "}
-              {String(result.ok)}
-            </p>
-            {securityHeadersFromResult && (
-              <div className="header-grid">
-                {Object.entries(securityHeadersFromResult.present).map(
-                  ([key, value]) => (
-                    <div key={key} className="header-row ok">
+      <section className="output-column">
+        {/* Response output */}
+        <section className="panel output">
+          <h2>Last Response</h2>
+          {!result ? (
+            <p>No request made yet.</p>
+          ) : (
+            <>
+              <p>
+                <strong>{result.name}</strong> | status: {result.status} | ok:{" "}
+                {String(result.ok)}
+              </p>
+              {securityHeadersFromResult && (
+                <div className="header-grid">
+                  {Object.entries(securityHeadersFromResult.present).map(
+                    ([key, value]) => (
+                      <div key={key} className="header-row ok">
+                        <span className="header-name">{key}</span>
+                        <span className="header-value">{value}</span>
+                      </div>
+                    ),
+                  )}
+                  {securityHeadersFromResult.missing.map((key) => (
+                    <div key={key} className="header-row missing">
                       <span className="header-name">{key}</span>
-                      <span className="header-value">{value}</span>
+                      <span className="header-value">not set</span>
                     </div>
-                  ),
-                )}
-                {securityHeadersFromResult.missing.map((key) => (
-                  <div key={key} className="header-row missing">
-                    <span className="header-name">{key}</span>
-                    <span className="header-value">not set</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            <pre>
-              {result.body
-                ? JSON.stringify(result.body, null, 2)
-                : result.rawText || "(empty body)"}
-            </pre>
-          </>
-        )}
+                  ))}
+                </div>
+              )}
+              <pre>
+                {result.body
+                  ? JSON.stringify(result.body, null, 2)
+                  : result.rawText || "(empty body)"}
+              </pre>
+            </>
+          )}
+        </section>
       </section>
     </main>
   );
