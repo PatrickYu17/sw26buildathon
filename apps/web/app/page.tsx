@@ -1,50 +1,66 @@
-import { PageShell, Panel, PanelHeader, PanelBody, EmptyState, Button, Hero, StatCard } from "@/app/components/PageShell";
+import { PageShell, Panel, PanelHeader, PanelBody, EmptyState, Button, StatCard } from "@/app/components/PageShell";
+import { PersonDropdown } from "@/app/components/PersonDropdown";
+import { redirect } from "next/navigation";
+import { isAuthenticatedRequest } from "@/app/lib/auth-session";
 
-function DashboardHero() {
-  return (
-    <Hero>
-      <div className="text-center">
-        <div className="mb-3 inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/80">
-          <svg className="h-8 w-8 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
-          </svg>
-        </div>
-        <h2 className="text-lg font-semibold text-foreground">Welcome back!</h2>
-        <p className="text-sm text-text-muted mt-1">Keep nurturing your relationships</p>
-      </div>
-    </Hero>
-  );
-}
+export default async function Home() {
+  const isAuthenticated = await isAuthenticatedRequest();
 
-export default function Home() {
+  if (!isAuthenticated) {
+    redirect("/login");
+  }
+
   return (
     <PageShell
       title="Dashboard"
-      subtitle="Your relationship overview"
-      hero={<DashboardHero />}
+      titleClassName="text-3xl"
+      titleAccessory={
+        <div className="mt-1 flex items-center gap-2 sm:mt-0 sm:ml-2">
+          <PersonDropdown
+            id="dashboard-person-selector"
+            label="Select person"
+            className="w-48"
+            options={[
+              { value: "", label: "Select Person", disabled: true },
+              { value: "all", label: "All People" },
+            ]}
+          />
+          <button
+            type="button"
+            disabled
+            aria-label="Add person (coming soon)"
+            title="Add person (coming soon)"
+            className="inline-flex h-[38px] w-10 items-center justify-center rounded-none border border-border bg-accent-light/30 text-text-muted opacity-70"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+          </button>
+        </div>
+      }
       actions={
         <Button variant="primary">
           <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.625c0-.621-.504-1.125-1.125-1.125h-9A1.125 1.125 0 004.5 5.625v12.75c0 .621.504 1.125 1.125 1.125h9c.621 0 1.125-.504 1.125-1.125V15m-3-3h7.5m0 0l-3-3m3 3l-3 3" />
           </svg>
-          Add Person
+          Log Out
         </Button>
       }
     >
       <div className="space-y-4">
         {/* Stats Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <StatCard 
-            label="People" 
+            label="Days Since Last Gesture" 
             value={0}
             icon={
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             }
           />
           <StatCard 
-            label="Upcoming" 
+            label="Upcoming Tasks" 
             value={0}
             icon={
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -61,38 +77,12 @@ export default function Home() {
               </svg>
             }
           />
-          <StatCard 
-            label="Streaks" 
-            value={0}
-            icon={
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z" />
-              </svg>
-            }
-          />
         </div>
 
         {/* Main Grid */}
         <div className="grid gap-4 lg:grid-cols-3">
           {/* Left Column */}
           <div className="space-y-4 lg:col-span-2">
-            {/* Recent People */}
-            <Panel>
-              <PanelHeader action={<Button variant="ghost" size="sm">View All</Button>}>
-                Recent People
-              </PanelHeader>
-              <EmptyState
-                icon={
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
-                  </svg>
-                }
-                title="No people yet"
-                description="Start by adding someone special to your circle"
-                action={<Button variant="secondary" size="sm">Add Your First Person</Button>}
-              />
-            </Panel>
-
             {/* Suggested Actions */}
             <Panel>
               <PanelHeader>Thoughtful Gestures</PanelHeader>
@@ -106,6 +96,23 @@ export default function Home() {
                 description="We'll suggest meaningful ways to connect with people you care about"
               />
             </Panel>
+
+            {/* Preferences */}
+            <div className="grid gap-4 md:grid-cols-2">
+              <Panel>
+                <PanelHeader>Likes</PanelHeader>
+                <PanelBody>
+                  <p className="text-sm text-text-muted">No likes added yet.</p>
+                </PanelBody>
+              </Panel>
+
+              <Panel>
+                <PanelHeader>Dislikes</PanelHeader>
+                <PanelBody>
+                  <p className="text-sm text-text-muted">No dislikes added yet.</p>
+                </PanelBody>
+              </Panel>
+            </div>
           </div>
 
           {/* Right Column */}
@@ -124,7 +131,6 @@ export default function Home() {
               />
             </Panel>
 
-            {/* Quick Notes */}
             <Panel>
               <PanelHeader>Quick Note</PanelHeader>
               <PanelBody className="space-y-3">
@@ -138,6 +144,7 @@ export default function Home() {
                 </div>
               </PanelBody>
             </Panel>
+
           </div>
         </div>
       </div>

@@ -1,10 +1,16 @@
+"use client";
+
+import { useState } from "react";
 import { PageShell, Card, Section, EmptyState, Button } from "@/app/components/PageShell";
+import { ConversationUploadPortal } from "@/app/communication/components/ConversationUploadPortal";
 
 export default function CommunicationPage() {
+  const [conversationInput, setConversationInput] = useState("");
+
   return (
     <PageShell
-      title="Communication"
-      subtitle="Tools to help you express yourself better"
+      title="Analysis"
+      subtitle="Analyze conversations and improve how you communicate"
     >
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Message Composer */}
@@ -95,6 +101,15 @@ export default function CommunicationPage() {
         </Card>
       </div>
 
+      <div className="mt-6">
+        <Section
+          title="Upload Portal"
+          description="Upload Instagram exports or text message transcripts and format them for analysis."
+        >
+          <ConversationUploadPortal onUseInAnalyzer={setConversationInput} />
+        </Section>
+      </div>
+
       {/* Conversation Analyzer */}
       <div className="mt-6">
         <Section 
@@ -104,10 +119,19 @@ export default function CommunicationPage() {
           <Card className="space-y-4">
             <textarea
               placeholder="Paste your conversation here..."
+              value={conversationInput}
+              onChange={(event) => setConversationInput(event.target.value)}
               className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-300 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300"
               rows={6}
             />
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="ghost"
+                onClick={() => setConversationInput("")}
+                disabled={!conversationInput.trim()}
+              >
+                Clear
+              </Button>
               <Button variant="secondary">
                 <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />

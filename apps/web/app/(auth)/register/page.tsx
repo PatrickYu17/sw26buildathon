@@ -40,7 +40,7 @@ export default function RegisterPage() {
       <p className="mt-2 text-sm text-slate-600">
         Simple auth powered by Better Auth.
       </p>
-      <form onSubmit={onSubmit} className="mt-6 space-y-4 rounded-xl border border-slate-200 bg-white p-6">
+      <form onSubmit={onSubmit} className="mt-6 space-y-4 rounded-none border border-slate-200 bg-white p-6">
         <label className="block space-y-1">
           <span className="text-sm font-medium text-slate-700">Name</span>
           <input

@@ -1,11 +1,11 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f5fa;
+  --background: #fafaf7;
   --foreground: #3d3654;
-  --accent: #a990d8;
+  --accent: #7b57c2;
   --accent-light: #f0ebf7;
-  --accent-muted: #c7b8e6;
+  --accent-muted: #6541ac;
   --accent-warm: #e8d4f0;
   --surface: #ffffff;
   --border: #e4dff0;
@@ -27,8 +27,16 @@
   --color-text-muted: var(--text-muted);
   --color-rose: var(--rose);
   --color-rose-light: var(--rose-light);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-bagel-fat-one);
   --font-mono: var(--font-geist-mono);
+  --radius-xs: 0.1rem;
+  --radius-sm: 0.2rem;
+  --radius-md: 0.3rem;
+  --radius-lg: 0.45rem;
+  --radius-xl: 0.6rem;
+  --radius-2xl: 0.8rem;
+  --radius-3xl: 1.1rem;
+  --radius-4xl: 1.5rem;
 }
 
 html {
@@ -38,5 +46,20 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+a,
+button,
+label,
+input,
+select,
+textarea {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }

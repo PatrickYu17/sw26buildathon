@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Bagel_Fat_One, Geist_Mono } from "next/font/google";
 import { FloatingNav } from "@/app/components/FloatingNav";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const bagelFatOne = Bagel_Fat_One({
+  weight: "400",
+  variable: "--font-bagel-fat-one",
   subsets: ["latin"],
 });
 
@@ -26,9 +27,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="light" data-theme="light">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background font-sans`}
+        className={`${bagelFatOne.variable} ${geistMono.variable} antialiased bg-background font-sans`}
       >
-        <div className="mx-auto w-full max-w-[1080px] min-h-screen pb-24 px-6 sm:px-10 bg-white rounded-none sm:rounded-3xl sm:my-4 sm:min-h-[calc(100vh-2rem)] border-x sm:border border-border">
+        <div className="mx-auto w-full lg:w-[75vw] min-h-screen pb-24 px-6 sm:px-10">
           {children}
         </div>
         <FloatingNav />
