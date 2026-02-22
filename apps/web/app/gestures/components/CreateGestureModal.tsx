@@ -16,6 +16,7 @@ import {
 type CreateGestureModalProps = {
   onClose: () => void;
   onCreate: (input: CreateGestureInput) => void;
+  people: Array<{ id: string; display_name: string }>;
 };
 
 const INPUT_BASE_CLASSNAME =
@@ -44,7 +45,7 @@ function cloneDefaultValues(): CreateGestureInput {
   return { ...DEFAULT_FORM_VALUES };
 }
 
-export function CreateGestureModal({ onClose, onCreate }: CreateGestureModalProps) {
+export function CreateGestureModal({ onClose, onCreate, people }: CreateGestureModalProps) {
   const [formValues, setFormValues] = useState<CreateGestureInput>(cloneDefaultValues);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -237,14 +238,19 @@ export function CreateGestureModal({ onClose, onCreate }: CreateGestureModalProp
               <label htmlFor="gesture-person" className="text-xs font-medium text-slate-500">
                 Person
               </label>
-              <input
+              <select
                 id="gesture-person"
-                type="text"
-                placeholder="Who is this for?"
                 value={formValues.person}
                 onChange={(event) => updateField("person", event.target.value)}
                 className={INPUT_BASE_CLASSNAME}
-              />
+              >
+                <option value="">No person selected</option>
+                {people.map((person) => (
+                  <option key={person.id} value={person.id}>
+                    {person.display_name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { authClient } from "@/app/lib/auth-client";
+import { sanitizeNextPath } from "@/app/lib/auth-redirect";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -29,7 +30,12 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/");
+    const nextParam =
+      typeof window === "undefined"
+        ? null
+        : new URLSearchParams(window.location.search).get("next");
+    const nextPath = sanitizeNextPath(nextParam) ?? "/";
+    router.push(nextPath);
   };
 
   return (

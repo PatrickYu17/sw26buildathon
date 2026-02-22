@@ -13,15 +13,11 @@ function getBackendBaseUrl() {
 }
 
 export async function isAuthenticatedRequest() {
-  if (process.env.NODE_ENV !== "production") {
-    return true;
-  }
-
   const requestHeaders = await headers();
   const cookie = requestHeaders.get("cookie") ?? "";
 
   try {
-    const response = await fetch(`${getBackendBaseUrl()}/api/me`, {
+    const response = await fetch(`${getBackendBaseUrl()}/api/v1/auth/status`, {
       headers: cookie ? { cookie } : {},
       cache: "no-store",
     });

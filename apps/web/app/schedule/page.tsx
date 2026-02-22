@@ -1,13 +1,10 @@
 "use client";
 
-import { type ChangeEvent, useMemo, useRef, useState } from "react";
-
+import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { PageShell, Card, Section, EmptyState, Button } from "@/app/components/PageShell";
-import {
-  buildEventsByDateForMonth,
-  buildEventsByDateForRange,
-  type CalendarEvent,
-} from "@/app/schedule/calendar-events";
+import { fetchEventsByDateForRange, type CalendarEvent } from "@/app/schedule/calendar-events";
+import { api } from "@/app/lib/api";
+import { useApi } from "@/app/lib/hooks/use-api";
 import {
   buildCalendarGrid,
   formatMonthInputValue,
@@ -40,7 +37,7 @@ function formatDateKey(dateKey: string): string {
   });
 }
 
-function EventList({ events }: { events: CalendarEvent[] }) {
+function EventList({ events, onDelete }: { events: CalendarEvent[]; onDelete: (id: string) => void }) {
   return (
     <div className="space-y-3">
       {events.map((event) => (
@@ -51,6 +48,20 @@ function EventList({ events }: { events: CalendarEvent[] }) {
           </div>
           <p className="text-xs text-text-muted">{event.time}</p>
           {event.details && <p className="text-xs text-text-muted">{event.details}</p>}
+          <div className="flex justify-end gap-2">
+            <button
+              className="text-xs text-slate-600"
+              onClick={() => {
+                const updatedTitle = window.prompt("Edit event title", event.title);
+                if (updatedTitle?.trim()) {
+                  void api.events.update(event.id, { title: updatedTitle.trim() });
+                }
+              }}
+            >
+              Edit
+            </button>
+            <button className="text-xs text-red-600" onClick={() => onDelete(event.id)}>Delete</button>
+          </div>
         </Card>
       ))}
     </div>
@@ -63,20 +74,50 @@ export default function SchedulePage() {
     const today = new Date();
     return new Date(today.getFullYear(), today.getMonth(), 1);
   });
+
+  const [selectedPersonId, setSelectedPersonId] = useState("");
+  const [newEventTitle, setNewEventTitle] = useState("");
+  const [newEventDetails, setNewEventDetails] = useState("");
+  const [newEventType, setNewEventType] = useState("Event");
+  const [newEventAllDay, setNewEventAllDay] = useState(true);
+  const [newEventTime, setNewEventTime] = useState("09:00");
+  const [savingEvent, setSavingEvent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const monthPickerRef = useRef<HTMLInputElement>(null);
 
   const calendarCells = useMemo(() => buildCalendarGrid(visibleMonth), [visibleMonth]);
-  const eventsByDateInMonth = useMemo(() => buildEventsByDateForMonth(visibleMonth), [visibleMonth]);
   const selectedDateKey = toIsoDate(selectedDate);
-  const selectedDayEvents = eventsByDateInMonth.get(selectedDateKey) ?? [];
 
-  const weeklyEvents = useMemo<WeeklyEvent[]>(() => {
+  const [eventsByDateInMonth, setEventsByDateInMonth] = useState<Map<string, CalendarEvent[]>>(new Map());
+  const [weeklyEvents, setWeeklyEvents] = useState<WeeklyEvent[]>([]);
+
+  const { data: peopleData } = useApi(() => api.people.list(), []);
+  const people = peopleData?.data ?? [];
+
+  async function reloadEventsForVisibleMonth() {
+    const monthStart = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), 1);
+    const monthEnd = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 0, 23, 59, 59);
+    const map = await fetchEventsByDateForRange(monthStart, monthEnd);
+    setEventsByDateInMonth(map);
+  }
+
+  useEffect(() => {
+    void reloadEventsForVisibleMonth();
+  }, [visibleMonth]);
+
+  useEffect(() => {
     const { start, end } = getWeekRange(selectedDate);
-    const eventsByDate = buildEventsByDateForRange(start, end);
-    return Array.from(eventsByDate.entries()).flatMap(([dateKey, events]) =>
-      events.map((event) => ({ dateKey, event })),
-    );
+    fetchEventsByDateForRange(start, end).then((map) => {
+      const events: WeeklyEvent[] = [];
+      for (const [dateKey, evts] of map.entries()) {
+        for (const event of evts) events.push({ dateKey, event });
+      }
+      setWeeklyEvents(events);
+    });
   }, [selectedDate]);
+
+  const selectedDayEvents = eventsByDateInMonth.get(selectedDateKey) ?? [];
 
   function goToMonth(year: number, month: number): void {
     const nextMonthDate = new Date(year, month, 1);
@@ -90,98 +131,82 @@ export default function SchedulePage() {
 
   function handleMonthChange(event: ChangeEvent<HTMLInputElement>): void {
     const parsedMonth = parseMonthInputValue(event.target.value);
-    if (!parsedMonth) {
-      return;
-    }
-
+    if (!parsedMonth) return;
     goToMonth(parsedMonth.year, parsedMonth.month);
   }
 
   function openMonthPicker(): void {
     const monthPicker = monthPickerRef.current as MonthPickerInput | null;
-    if (!monthPicker) {
-      return;
-    }
-
+    if (!monthPicker) return;
     if (typeof monthPicker.showPicker === "function") {
       monthPicker.showPicker();
       return;
     }
-
     monthPicker.click();
+  }
+
+  async function handleAddEvent() {
+    if (!selectedPersonId || !newEventTitle.trim()) return;
+    setSavingEvent(true);
+    setError(null);
+    try {
+      const dateIso = toIsoDate(selectedDate);
+      const startAt = newEventAllDay
+        ? new Date(`${dateIso}T00:00:00`).toISOString()
+        : new Date(`${dateIso}T${newEventTime}:00`).toISOString();
+
+      await api.events.create(selectedPersonId, {
+        title: newEventTitle.trim(),
+        event_type: newEventType || undefined,
+        start_at: startAt,
+        is_all_day: newEventAllDay,
+        details: newEventDetails.trim() || undefined,
+      });
+      setNewEventTitle("");
+      setNewEventDetails("");
+      await reloadEventsForVisibleMonth();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to create event.");
+    } finally {
+      setSavingEvent(false);
+    }
+  }
+
+  async function handleDeleteEvent(id: string) {
+    setError(null);
+    try {
+      await api.events.delete(id);
+      await reloadEventsForVisibleMonth();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to delete event.");
+    }
   }
 
   return (
     <PageShell
       title="Calendar"
-      subtitle="Dates, birthdays, anniversaries & reminders"
-      actions={
-        <Button variant="primary">
-          <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
-          Add Event
-        </Button>
-      }
+      subtitle="Dates, birthdays, anniversaries and reminders"
+      actions={<Button variant="primary" onClick={() => void handleAddEvent()} disabled={savingEvent || !selectedPersonId || !newEventTitle.trim()}>{savingEvent ? "Saving..." : "Add Event"}</Button>}
     >
+      {error && <Card className="mb-4 text-sm text-red-600">{error}</Card>}
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <Card>
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={openMonthPicker}
-                  aria-label="Select month and year"
-                  className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-                >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"
-                    />
-                  </svg>
-                </button>
+                <button type="button" onClick={openMonthPicker} aria-label="Select month and year" className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600">Pick</button>
                 <h3 className="text-lg font-medium text-slate-900">{formatMonthTitle(visibleMonth)}</h3>
-                <input
-                  ref={monthPickerRef}
-                  type="month"
-                  aria-label="Month and year selector"
-                  value={formatMonthInputValue(visibleMonth)}
-                  onChange={handleMonthChange}
-                  className="pointer-events-none absolute opacity-0"
-                />
+                <input ref={monthPickerRef} type="month" aria-label="Month and year selector" value={formatMonthInputValue(visibleMonth)} onChange={handleMonthChange} className="pointer-events-none absolute opacity-0" />
               </div>
               <div className="flex gap-1">
-                <button
-                  type="button"
-                  onClick={() => handleMonthStep(-1)}
-                  aria-label="Previous month"
-                  className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-                >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleMonthStep(1)}
-                  aria-label="Next month"
-                  className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-                >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                  </svg>
-                </button>
+                <button type="button" onClick={() => handleMonthStep(-1)} aria-label="Previous month" className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600">Prev</button>
+                <button type="button" onClick={() => handleMonthStep(1)} aria-label="Next month" className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600">Next</button>
               </div>
             </div>
 
             <div className="mb-2 grid grid-cols-7 gap-1">
               {DAY_HEADERS.map((day) => (
-                <div key={day} className="py-2 text-center text-xs font-medium text-slate-400">
-                  {day}
-                </div>
+                <div key={day} className="py-2 text-center text-xs font-medium text-slate-400">{day}</div>
               ))}
             </div>
 
@@ -204,13 +229,7 @@ export default function SchedulePage() {
                     }`}
                   >
                     {cell.dayNumber}
-                    {hasEvents && (
-                      <span
-                        className={`absolute bottom-2 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full ${
-                          isSelected ? "bg-accent-muted" : "bg-accent"
-                        }`}
-                      />
-                    )}
+                    {hasEvents && <span className={`absolute bottom-2 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full ${isSelected ? "bg-accent-muted" : "bg-accent"}`} />}
                   </button>
                 );
               })}
@@ -219,14 +238,23 @@ export default function SchedulePage() {
         </div>
 
         <div className="space-y-6">
+          <Section title="Create Event">
+            <Card className="space-y-2">
+              <select value={selectedPersonId} onChange={(e) => setSelectedPersonId(e.target.value)} className="w-full rounded border border-slate-200 px-2 py-2 text-sm">
+                <option value="">Select person</option>
+                {people.map((person) => <option key={person.id} value={person.id}>{person.display_name}</option>)}
+              </select>
+              <input value={newEventTitle} onChange={(e) => setNewEventTitle(e.target.value)} placeholder="Event title" className="w-full rounded border border-slate-200 px-2 py-2 text-sm" />
+              <input value={newEventType} onChange={(e) => setNewEventType(e.target.value)} placeholder="Type" className="w-full rounded border border-slate-200 px-2 py-2 text-sm" />
+              <textarea value={newEventDetails} onChange={(e) => setNewEventDetails(e.target.value)} placeholder="Details" className="w-full rounded border border-slate-200 px-2 py-2 text-sm" rows={2} />
+              <label className="flex items-center gap-2 text-xs text-slate-600"><input type="checkbox" checked={newEventAllDay} onChange={(e) => setNewEventAllDay(e.target.checked)} /> All day</label>
+              {!newEventAllDay && <input type="time" value={newEventTime} onChange={(e) => setNewEventTime(e.target.value)} className="w-full rounded border border-slate-200 px-2 py-2 text-sm" />}
+              <Button size="sm" onClick={() => void handleAddEvent()} disabled={savingEvent || !selectedPersonId || !newEventTitle.trim()}>{savingEvent ? "Saving..." : "Add"}</Button>
+            </Card>
+          </Section>
+
           <Section title={formatSelectedDayTitle(selectedDate)}>
-            {selectedDayEvents.length > 0 ? (
-              <EventList events={selectedDayEvents} />
-            ) : (
-              <Card padding="none">
-                <EmptyState title="No events on this day" description="Pick another day or add a new event." />
-              </Card>
-            )}
+            {selectedDayEvents.length > 0 ? <EventList events={selectedDayEvents} onDelete={handleDeleteEvent} /> : <Card padding="none"><EmptyState title="No events on this day" description="Pick another day or add a new event." /></Card>}
           </Section>
 
           <Section title="This Week">
@@ -243,20 +271,9 @@ export default function SchedulePage() {
                 ))}
               </Card>
             ) : (
-              <Card padding="none">
-                <EmptyState
-                  icon={
-                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                    </svg>
-                  }
-                  title="No upcoming events"
-                  description="Add birthdays and anniversaries"
-                />
-              </Card>
+              <Card padding="none"><EmptyState title="No upcoming events" description="Add birthdays and anniversaries" /></Card>
             )}
           </Section>
-
         </div>
       </div>
     </PageShell>

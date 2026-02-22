@@ -14,6 +14,7 @@ type PersonDropdownProps = {
   options: PersonOption[];
   defaultValue?: string;
   className?: string;
+  onChange?: (value: string) => void;
 };
 
 function getNextEnabledIndex(options: PersonOption[], startIndex: number, step: 1 | -1): number {
@@ -45,6 +46,7 @@ export function PersonDropdown({
   options,
   defaultValue = "",
   className = "",
+  onChange,
 }: PersonDropdownProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -150,6 +152,7 @@ export function PersonDropdown({
       const option = options[highlightedIndex];
       if (option && !option.disabled) {
         setSelectedValue(option.value);
+        onChange?.(option.value);
       }
       setIsOpen(false);
       return;
@@ -225,6 +228,7 @@ export function PersonDropdown({
                         return;
                       }
                       setSelectedValue(option.value);
+                      onChange?.(option.value);
                       setIsOpen(false);
                       buttonRef.current?.focus();
                     }}

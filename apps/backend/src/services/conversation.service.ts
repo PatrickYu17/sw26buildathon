@@ -3,12 +3,17 @@ import { conversation, message } from "@hackathon/db";
 import { db } from "../lib/db";
 import { aiService, type ChatMessage, type ChatOptions } from "./ai.service";
 import { HttpError } from "../middleware/error-handler";
+import type { AiMode } from "../config/ai-prompts";
 
 function generateId(): string {
   return crypto.randomUUID();
 }
 
-export async function createConversation(userId: string, title?: string) {
+export async function createConversation(
+  userId: string,
+  title?: string,
+  aiMode: AiMode = "relationship_coach",
+) {
   const id = generateId();
   const [row] = await db
     .insert(conversation)
@@ -16,6 +21,7 @@ export async function createConversation(userId: string, title?: string) {
       id,
       user_id: userId,
       title: title || "New conversation",
+      ai_mode: aiMode,
     })
     .returning();
   return row;
@@ -27,6 +33,15 @@ export async function listConversations(userId: string) {
     .from(conversation)
     .where(eq(conversation.user_id, userId))
     .orderBy(desc(conversation.updated_at));
+}
+
+export async function listMessages(conversationId: string, userId: string) {
+  await getConversationForUser(conversationId, userId);
+  return db
+    .select()
+    .from(message)
+    .where(eq(message.conversation_id, conversationId))
+    .orderBy(asc(message.sequence));
 }
 
 async function getConversationForUser(conversationId: string, userId: string) {
@@ -98,9 +113,9 @@ export async function sendMessage(
   conversationId: string,
   userId: string,
   content: ChatMessage["content"],
-  options?: Omit<ChatOptions, "signal">,
+  options?: Omit<ChatOptions, "signal" | "aiMode">,
 ) {
-  await getConversationForUser(conversationId, userId);
+  const conv = await getConversationForUser(conversationId, userId);
 
   const history = await loadHistory(conversationId);
   let seq = await getNextSequence(conversationId);
@@ -108,7 +123,10 @@ export async function sendMessage(
   const userMsg = await persistMessage(conversationId, "user", content, seq++);
   history.push({ role: "user", content });
 
-  const response = await aiService.chat(history, options);
+  const response = await aiService.chat(history, {
+    ...options,
+    aiMode: conv.ai_mode as AiMode,
+  });
 
   const assistantMsg = await persistMessage(conversationId, "assistant", response.content, seq);
   await touchConversation(conversationId);
@@ -120,9 +138,9 @@ export async function streamMessage(
   conversationId: string,
   userId: string,
   content: ChatMessage["content"],
-  options?: ChatOptions,
+  options?: Omit<ChatOptions, "signal" | "aiMode">,
 ) {
-  await getConversationForUser(conversationId, userId);
+  const conv = await getConversationForUser(conversationId, userId);
 
   const history = await loadHistory(conversationId);
   let seq = await getNextSequence(conversationId);
@@ -142,6 +160,7 @@ export async function streamMessage(
     userMessage: userMsg,
     history,
     options,
+    aiMode: conv.ai_mode as AiMode,
     persistAssistantMessage,
   };
 }
@@ -149,6 +168,7 @@ export async function streamMessage(
 export const conversationService = {
   createConversation,
   listConversations,
+  listMessages,
   sendMessage,
   streamMessage,
 };

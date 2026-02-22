@@ -4,12 +4,17 @@ import type { MessageParam, ContentBlockParam } from "@anthropic-ai/sdk/resource
 import { anthropic } from "../lib/clients/anthropic";
 import { env } from "../lib/env";
 import { HttpError } from "../middleware/error-handler";
+import { buildSystemPrompt, resolveAiMode } from "./ai-prompt.service";
+import type { AiContext, AiMode } from "../config/ai-prompts";
 
 export interface ChatOptions {
   maxTokens?: number;
   temperature?: number;
   model?: string;
   signal?: AbortSignal;
+  aiMode?: AiMode | string;
+  context?: AiContext;
+  userLocale?: string;
 }
 
 export interface ChatMessage {
@@ -73,7 +78,17 @@ export async function chat(
     temperature = 1,
     model = env.aiModel,
     signal,
+    aiMode,
+    context,
+    userLocale,
   } = options;
+
+  const systemPrompt = buildSystemPrompt({
+    aiMode: resolveAiMode(aiMode),
+    context,
+    userLocale,
+    fallbackSystemPrompt: env.aiSystemPrompt,
+  });
 
   try {
     const response = await anthropic.messages.create(
@@ -81,7 +96,7 @@ export async function chat(
         model,
         max_tokens: maxTokens,
         temperature,
-        system: env.aiSystemPrompt,
+        system: systemPrompt,
         messages: normalizeMessages(messages),
       },
       { signal: signal as AbortSignal | undefined },
@@ -116,7 +131,17 @@ export async function* chatStream(
     temperature = 1,
     model = env.aiModel,
     signal,
+    aiMode,
+    context,
+    userLocale,
   } = options;
+
+  const systemPrompt = buildSystemPrompt({
+    aiMode: resolveAiMode(aiMode),
+    context,
+    userLocale,
+    fallbackSystemPrompt: env.aiSystemPrompt,
+  });
 
   try {
     const stream = anthropic.messages.stream(
@@ -124,7 +149,7 @@ export async function* chatStream(
         model,
         max_tokens: maxTokens,
         temperature,
-        system: env.aiSystemPrompt,
+        system: systemPrompt,
         messages: normalizeMessages(messages),
       },
       { signal: signal as AbortSignal | undefined },
@@ -149,3 +174,5 @@ export const aiService = {
   chat,
   chatStream,
 };
+
+export type { AiContext, AiMode };

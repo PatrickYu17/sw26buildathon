@@ -15,6 +15,15 @@ import { authRouter } from "./routes/auth.routes";
 import { authDebugRouter } from "./routes/auth-debug.routes";
 import { protectedRouter } from "./routes/protected.routes";
 import { publicRouter } from "./routes/public.routes";
+import { peopleRouter } from "./routes/people.routes";
+import { notesRouter } from "./routes/notes.routes";
+import { eventsRouter } from "./routes/events.routes";
+import { gesturesRouter } from "./routes/gestures.routes";
+import { gestureTemplatesRouter } from "./routes/gesture-templates.routes";
+import { preferencesRouter } from "./routes/preferences.routes";
+import { dashboardRouter } from "./routes/dashboard.routes";
+import { importRouter } from "./routes/import.routes";
+import { settingsRouter } from "./routes/settings.routes";
 
 const app = express();
 
@@ -98,6 +107,17 @@ app.use(
   aiJsonParser,
   aiRouter,
 );
+// CRM routes (mounted before the catch-all protectedRouter)
+app.use("/api/v1/people", defaultJsonParser, requireAuth, peopleRouter);
+app.use("/api/v1", defaultJsonParser, requireAuth, notesRouter);
+app.use("/api/v1", defaultJsonParser, requireAuth, eventsRouter);
+app.use("/api/v1/gestures", defaultJsonParser, requireAuth, gesturesRouter);
+app.use("/api/v1/gesture-templates", defaultJsonParser, requireAuth, gestureTemplatesRouter);
+app.use("/api/v1", defaultJsonParser, requireAuth, preferencesRouter);
+app.use("/api/v1/dashboard", defaultJsonParser, requireAuth, dashboardRouter);
+app.use("/api/v1/imports", requireAuth, aiJsonParser, importRouter);
+app.use("/api/v1/settings", defaultJsonParser, requireAuth, settingsRouter);
+
 app.use("/api/v1", defaultJsonParser, requireAuth, protectedRouter);
 
 app.use(notFound);

@@ -12,6 +12,8 @@
   --text-muted: #8a8298;
   --rose: #e8b4c8;
   --rose-light: #fdf4f7;
+  --font-bagel-fat-one: "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-geist-mono: "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   color-scheme: light;
 }
 

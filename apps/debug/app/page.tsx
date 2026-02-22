@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useRef, useState } from "react";
+import { MarkdownContent } from "./components/MarkdownContent";
 
 type HttpMethod = "GET" | "POST";
 type DebugTab = "auth" | "ai";
@@ -892,7 +893,7 @@ export default function DebugPage() {
                       <strong>{message.role.toUpperCase()}</strong>
                       {message.status ? <span>{message.status}</span> : null}
                     </header>
-                    <p>{message.content || "(empty)"}</p>
+                    <MarkdownContent className="chat-markdown" content={message.content || "(empty)"} />
                   </article>
                 ))
               )}

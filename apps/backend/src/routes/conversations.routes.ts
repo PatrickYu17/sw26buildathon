@@ -3,9 +3,49 @@ import { z } from "zod";
 import { conversationService } from "../services/conversation.service";
 import { aiService, type ChatMessage } from "../services/ai.service";
 import { HttpError } from "../middleware/error-handler";
+import { AI_MODES } from "../config/ai-prompts";
 
 const CreateConversationSchema = z.object({
   title: z.string().min(1).max(200).optional(),
+  ai_mode: z.enum(AI_MODES).optional(),
+});
+
+const AiContextSchema = z.object({
+  person: z
+    .object({
+      id: z.string().optional(),
+      displayName: z.string().optional(),
+      relationshipType: z.string().optional(),
+      notes: z.string().optional(),
+    })
+    .optional(),
+  preferences: z
+    .object({
+      likes: z.array(z.string()).max(100).optional(),
+      dislikes: z.array(z.string()).max(100).optional(),
+    })
+    .optional(),
+  upcomingEvents: z
+    .array(
+      z.object({
+        title: z.string().min(1).max(200),
+        date: z.string().max(100).optional(),
+        type: z.string().max(100).optional(),
+      }),
+    )
+    .max(50)
+    .optional(),
+  recentGestures: z
+    .array(
+      z.object({
+        title: z.string().min(1).max(200),
+        status: z.string().max(100).optional(),
+        dueAt: z.string().max(100).optional(),
+      }),
+    )
+    .max(50)
+    .optional(),
+  task: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
 });
 
 const SendMessageSchema = z.object({
@@ -30,6 +70,7 @@ const SendMessageSchema = z.object({
   ]),
   maxTokens: z.number().int().positive().max(8192).optional(),
   temperature: z.number().min(0).max(1).optional(),
+  context: AiContextSchema.optional(),
 });
 
 function validateBody<T>(schema: z.ZodType<T>, body: unknown): T {
@@ -57,8 +98,8 @@ export const conversationsRouter = Router();
 conversationsRouter.post("/", async (req, res, next) => {
   try {
     const userId = getUserId(req);
-    const { title } = validateBody(CreateConversationSchema, req.body || {});
-    const conv = await conversationService.createConversation(userId, title);
+    const { title, ai_mode } = validateBody(CreateConversationSchema, req.body || {});
+    const conv = await conversationService.createConversation(userId, title, ai_mode);
     res.status(201).json(conv);
   } catch (error) {
     next(error);
@@ -76,17 +117,28 @@ conversationsRouter.get("/", async (req, res, next) => {
   }
 });
 
+// List messages for a conversation
+conversationsRouter.get("/:id/messages", async (req, res, next) => {
+  try {
+    const userId = getUserId(req);
+    const messages = await conversationService.listMessages(req.params.id, userId);
+    res.status(200).json({ messages });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Send message (non-streaming, persisted)
 conversationsRouter.post("/:id/messages", async (req, res, next) => {
   try {
     const userId = getUserId(req);
-    const { content, maxTokens, temperature } = validateBody(SendMessageSchema, req.body);
+    const { content, maxTokens, temperature, context } = validateBody(SendMessageSchema, req.body);
 
     const result = await conversationService.sendMessage(
       req.params.id,
       userId,
       content as ChatMessage["content"],
-      { maxTokens, temperature },
+      { maxTokens, temperature, context },
     );
 
     res.status(200).json({
@@ -103,13 +155,13 @@ conversationsRouter.post("/:id/messages", async (req, res, next) => {
 conversationsRouter.post("/:id/messages/stream", async (req, res, next) => {
   try {
     const userId = getUserId(req);
-    const { content, maxTokens, temperature } = validateBody(SendMessageSchema, req.body);
+    const { content, maxTokens, temperature, context } = validateBody(SendMessageSchema, req.body);
 
-    const { history, persistAssistantMessage } = await conversationService.streamMessage(
+    const { history, aiMode, persistAssistantMessage } = await conversationService.streamMessage(
       req.params.id,
       userId,
       content as ChatMessage["content"],
-      { maxTokens, temperature },
+      { maxTokens, temperature, context },
     );
 
     const abortController = new AbortController();
@@ -126,6 +178,8 @@ conversationsRouter.post("/:id/messages/stream", async (req, res, next) => {
     const stream = aiService.chatStream(history, {
       maxTokens,
       temperature,
+      aiMode,
+      context,
       signal: abortController.signal,
     });
 

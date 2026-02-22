@@ -1,113 +1,207 @@
+"use client";
+
+import { useState, useCallback } from "react";
 import { PageShell, Card, Section, Button } from "@/app/components/PageShell";
 import { NotificationsSettingsCard } from "@/app/settings/components/NotificationsSettingsCard";
+import { api } from "@/app/lib/api";
+import { useApi } from "@/app/lib/hooks/use-api";
 
 export default function SettingsPage() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [profileLoaded, setProfileLoaded] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileMsg, setProfileMsg] = useState("");
+
+  const [theme, setTheme] = useState("system");
+  const [language, setLanguage] = useState("en");
+  const [prefsSaving, setPrefsSaving] = useState(false);
+
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [passwordMsg, setPasswordMsg] = useState("");
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+
+  const [deletePassword, setDeletePassword] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteMsg, setDeleteMsg] = useState("");
+
+  const { data: notificationsData, refetch: refetchNotifications } = useApi(
+    () => api.settings.getNotifications(),
+    [],
+  );
+
+  useApi(async () => {
+    try {
+      const res = await api.auth.me();
+      if (!profileLoaded) {
+        setName(res.user.name || "");
+        setEmail(res.user.email || "");
+        setProfileLoaded(true);
+      }
+    } catch {}
+    return null;
+  }, [profileLoaded]);
+
+  useApi(async () => {
+    try {
+      const res = await api.settings.getPreferences();
+      if (res.data) {
+        setTheme(res.data.theme || "system");
+        setLanguage(res.data.language || "en");
+      }
+    } catch {}
+    return null;
+  }, []);
+
+  const handleSaveProfile = useCallback(async () => {
+    setProfileSaving(true);
+    setProfileMsg("");
+    try {
+      await api.settings.updateProfile({ name, email });
+      setProfileMsg("Saved!");
+    } catch (e) {
+      setProfileMsg(e instanceof Error ? e.message : "Failed to save");
+    }
+    setProfileSaving(false);
+  }, [name, email]);
+
+  const handleSavePreferences = useCallback(async () => {
+    setPrefsSaving(true);
+    try {
+      await api.settings.updatePreferences({ theme, language });
+    } catch {}
+    setPrefsSaving(false);
+  }, [theme, language]);
+
+  const handleChangePassword = useCallback(async () => {
+    setPasswordMsg("");
+    try {
+      await api.settings.changePassword({ current_password: currentPassword, new_password: newPassword });
+      setPasswordMsg("Password changed!");
+      setCurrentPassword("");
+      setNewPassword("");
+      setShowPasswordForm(false);
+    } catch (e) {
+      setPasswordMsg(e instanceof Error ? e.message : "Failed");
+    }
+  }, [currentPassword, newPassword]);
+
+  const handleSignOut = useCallback(async () => {
+    try {
+      await api.auth.signOut();
+      window.location.href = "/login";
+    } catch {}
+  }, []);
+
+  const handleDeleteAccount = useCallback(async () => {
+    setDeleteMsg("");
+    try {
+      await api.settings.deleteAccount({ password: deletePassword });
+      window.location.href = "/login";
+    } catch (e) {
+      setDeleteMsg(e instanceof Error ? e.message : "Failed");
+    }
+  }, [deletePassword]);
+
   return (
-    <PageShell
-      title="Settings"
-      subtitle="Manage your account and preferences"
-    >
+    <PageShell title="Settings" subtitle="Manage your account and preferences">
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Main Settings */}
         <div className="space-y-6 lg:col-span-2">
           <Section title="Profile">
             <Card className="space-y-6">
-              <div className="flex items-center gap-4">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-2xl text-slate-400">
-                  <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                  </svg>
-                </div>
-                <div>
-                  <Button variant="secondary" size="sm">Upload Photo</Button>
-                </div>
-              </div>
-              
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="text-xs font-medium text-slate-500">Name</label>
-                  <input
-                    type="text"
-                    placeholder="Your name"
-                    className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-300 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300"
-                  />
+                  <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-300 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300" />
                 </div>
                 <div>
                   <label className="text-xs font-medium text-slate-500">Email</label>
-                  <input
-                    type="email"
-                    placeholder="you@example.com"
-                    className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-300 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300"
-                  />
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-300 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300" />
                 </div>
               </div>
-
-              <div className="flex justify-end">
-                <Button variant="primary">Save Changes</Button>
+              <div className="flex items-center justify-end gap-2">
+                {profileMsg && <p className="text-xs text-slate-500">{profileMsg}</p>}
+                <Button variant="primary" onClick={handleSaveProfile} disabled={profileSaving}>{profileSaving ? "Saving..." : "Save Changes"}</Button>
               </div>
             </Card>
           </Section>
 
           <Section title="Notifications">
-            <NotificationsSettingsCard />
+            {notificationsData?.data ? (
+              <NotificationsSettingsCard
+                initialSettings={notificationsData.data}
+                onSave={async (settings) => {
+                  await api.settings.updateNotifications(settings);
+                  await refetchNotifications();
+                }}
+              />
+            ) : (
+              <Card>Loading notifications...</Card>
+            )}
           </Section>
 
           <Section title="Preferences">
             <Card className="space-y-4">
               <div>
                 <label className="text-xs font-medium text-slate-500">Theme</label>
-                <select className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-300">
-                  <option>System</option>
-                  <option>Light</option>
-                  <option>Dark</option>
+                <select value={theme} onChange={(e) => setTheme(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-300">
+                  <option value="system">System</option>
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
                 </select>
               </div>
               <div>
                 <label className="text-xs font-medium text-slate-500">Language</label>
-                <select className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-300">
-                  <option>English</option>
-                  <option>Spanish</option>
-                  <option>French</option>
+                <select value={language} onChange={(e) => setLanguage(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-300">
+                  <option value="en">English</option>
+                  <option value="es">Spanish</option>
+                  <option value="fr">French</option>
                 </select>
+              </div>
+              <div className="flex justify-end">
+                <Button variant="primary" size="sm" onClick={handleSavePreferences} disabled={prefsSaving}>{prefsSaving ? "Saving..." : "Save"}</Button>
               </div>
             </Card>
           </Section>
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-6">
           <Section title="Account">
             <Card className="space-y-3">
-              <Button variant="ghost" className="w-full justify-start">
-                <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
-                </svg>
-                Change Password
-              </Button>
-              <Button variant="ghost" className="w-full justify-start">
-                <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-                </svg>
-                Export Data
-              </Button>
+              {showPasswordForm ? (
+                <div className="space-y-2">
+                  <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="Current password" className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm" />
+                  <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="New password" className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm" />
+                  {passwordMsg && <p className="text-xs text-red-600">{passwordMsg}</p>}
+                  <div className="flex gap-2">
+                    <Button variant="primary" size="sm" onClick={handleChangePassword}>Change</Button>
+                    <Button variant="ghost" size="sm" onClick={() => setShowPasswordForm(false)}>Cancel</Button>
+                  </div>
+                </div>
+              ) : (
+                <Button variant="ghost" className="w-full justify-start" onClick={() => setShowPasswordForm(true)}>Change Password</Button>
+              )}
               <hr className="border-slate-200" />
-              <Button variant="ghost" className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700">
-                <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
-                </svg>
-                Sign Out
-              </Button>
+              <Button variant="ghost" className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700" onClick={handleSignOut}>Sign Out</Button>
             </Card>
           </Section>
 
           <Section title="Danger Zone">
             <Card className="border-red-200 bg-red-50/50">
-              <p className="text-sm text-red-700">
-                Permanently delete your account and all associated data.
-              </p>
-              <button className="mt-3 w-full rounded-lg border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50">
-                Delete Account
-              </button>
+              <p className="text-sm text-red-700">Permanently delete your account and all associated data.</p>
+              {showDeleteConfirm ? (
+                <div className="mt-3 space-y-2">
+                  <input type="password" value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)} placeholder="Enter your password to confirm" className="w-full rounded-lg border border-red-300 bg-white px-3 py-2 text-sm" />
+                  {deleteMsg && <p className="text-xs text-red-600">{deleteMsg}</p>}
+                  <div className="flex gap-2">
+                    <button onClick={handleDeleteAccount} className="rounded-lg border border-red-300 bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700">Delete Forever</button>
+                    <button onClick={() => setShowDeleteConfirm(false)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-600 hover:bg-slate-50">Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => setShowDeleteConfirm(true)} className="mt-3 w-full rounded-lg border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50">Delete Account</button>
+              )}
             </Card>
           </Section>
         </div>
