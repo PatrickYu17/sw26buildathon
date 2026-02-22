@@ -1,4 +1,5 @@
 import { PageShell, Card, Section, Button } from "@/app/components/PageShell";
+import { NotificationsSettingsCard } from "@/app/settings/components/NotificationsSettingsCard";
 
 export default function SettingsPage() {
   return (
@@ -48,23 +49,7 @@ export default function SettingsPage() {
           </Section>
 
           <Section title="Notifications">
-            <Card className="space-y-4">
-              {[
-                { id: "reminders", label: "Event Reminders", description: "Get notified about upcoming birthdays and anniversaries" },
-                { id: "suggestions", label: "AI Suggestions", description: "Receive periodic gesture and task suggestions" },
-                { id: "weekly", label: "Weekly Summary", description: "Get a weekly recap of your relationship activity" },
-              ].map((setting) => (
-                <div key={setting.id} className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-slate-900">{setting.label}</p>
-                    <p className="text-sm text-slate-500">{setting.description}</p>
-                  </div>
-                  <button className="relative h-6 w-11 rounded-full bg-slate-200 transition-colors">
-                    <span className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white shadow transition-transform" />
-                  </button>
-                </div>
-              ))}
-            </Card>
+            <NotificationsSettingsCard />
           </Section>
 
           <Section title="Preferences">

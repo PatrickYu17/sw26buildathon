@@ -1,10 +1,28 @@
+"use client";
+
+import { useRef, useState } from "react";
 import { PageShell, Card, EmptyState } from "@/app/components/PageShell";
+import { PersonDropdown } from "@/app/components/PersonDropdown";
 
 export default function CompanionPage() {
+  const [askInput, setAskInput] = useState("");
+  const askInputRef = useRef<HTMLInputElement | null>(null);
+  const quickPrompts = [
+    "Help me plan a date",
+    "Suggest a thoughtful gesture",
+    "How can I be more supportive?",
+    "Draft an apology message",
+  ];
+
+  const handleQuickPromptClick = (prompt: string) => {
+    setAskInput(prompt);
+    askInputRef.current?.focus();
+    askInputRef.current?.setSelectionRange(prompt.length, prompt.length);
+  };
+
   return (
     <PageShell
-      title="Companion"
-      subtitle="Your AI relationship coach"
+      title="Coach"
     >
       <div className="grid gap-6 lg:grid-cols-5">
         {/* Chat Area */}
@@ -29,6 +47,9 @@ export default function CompanionPage() {
                 <input
                   type="text"
                   placeholder="Ask your companion anything..."
+                  value={askInput}
+                  onChange={(event) => setAskInput(event.target.value)}
+                  ref={askInputRef}
                   className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-300 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300"
                 />
                 <button className="flex items-center justify-center rounded-xl bg-slate-900 px-4 text-white transition-colors hover:bg-slate-800">
@@ -51,14 +72,10 @@ export default function CompanionPage() {
           <Card>
             <h3 className="text-sm font-medium text-slate-900">Quick Prompts</h3>
             <div className="mt-3 space-y-2">
-              {[
-                "Help me plan a date",
-                "Suggest a thoughtful gesture",
-                "How can I be more supportive?",
-                "Draft an apology message",
-              ].map((prompt) => (
+              {quickPrompts.map((prompt) => (
                 <button
                   key={prompt}
+                  onClick={() => handleQuickPromptClick(prompt)}
                   className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-100"
                 >
                   {prompt}
@@ -72,9 +89,15 @@ export default function CompanionPage() {
             <p className="mt-2 text-sm text-slate-500">
               Select a person to get personalized advice based on your history together.
             </p>
-            <button className="mt-3 w-full rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-4 text-sm text-slate-500 transition-colors hover:border-slate-400 hover:bg-slate-100">
-              + Select Person
-            </button>
+            <PersonDropdown
+              id="companion-person-selector"
+              label="Select person for companion context"
+              className="mt-3"
+              options={[
+                { value: "", label: "Select Person", disabled: true },
+                { value: "all", label: "All People" },
+              ]}
+            />
           </Card>
         </div>
       </div>

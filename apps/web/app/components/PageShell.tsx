@@ -1,11 +1,13 @@
-import type { ReactNode } from "react";
+import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 type PageShellProps = {
-  title: string;
+  title: ReactNode;
   subtitle?: string;
   children?: ReactNode;
   actions?: ReactNode;
   hero?: ReactNode;
+  titleAccessory?: ReactNode;
+  titleClassName?: string;
 };
 
 export function PageShell({ 
@@ -14,24 +16,29 @@ export function PageShell({
   children, 
   actions,
   hero,
+  titleAccessory,
+  titleClassName = "text-xl",
 }: PageShellProps) {
   return (
     <main className="w-full pt-6">
       {hero && (
-        <div className="mb-6 rounded-2xl overflow-hidden bg-linear-to-br from-accent-light via-accent-warm to-rose-light">
+        <div className="mb-6 rounded-none overflow-hidden bg-linear-to-br from-accent-light via-accent-warm to-rose-light">
           {hero}
         </div>
       )}
-      <header className="flex items-center justify-between mb-5">
+      <header className="mb-5 flex flex-col gap-3 rounded-xl border border-border/70 bg-surface px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-foreground">
-            {title}
-          </h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className={`${titleClassName} font-semibold text-foreground`}>
+              {title}
+            </h1>
+            {titleAccessory}
+          </div>
           {subtitle && (
             <p className="text-sm text-text-muted mt-0.5">{subtitle}</p>
           )}
         </div>
-        {actions && <div className="flex items-center gap-3">{actions}</div>}
+        {actions && <div className="flex items-center gap-3 sm:shrink-0">{actions}</div>}
       </header>
       {children}
     </main>
@@ -59,7 +66,7 @@ type PanelProps = {
 
 export function Panel({ children, className = "", decoration }: PanelProps) {
   return (
-    <div className={`relative bg-white rounded-2xl border border-border overflow-hidden ${className}`}>
+    <div className={`relative bg-white rounded-none border border-border overflow-hidden ${className}`}>
       {decoration && (
         <div className="absolute top-0 right-0 opacity-20 pointer-events-none">
           {decoration}
@@ -77,7 +84,7 @@ type PanelHeaderProps = {
 
 export function PanelHeader({ children, action }: PanelHeaderProps) {
   return (
-    <div className="flex items-center justify-between bg-accent-light/50 px-4 py-3 rounded-t-2xl">
+    <div className="flex items-center justify-between bg-accent-light/50 px-4 py-3 rounded-none">
       <span className="text-sm font-medium text-foreground">{children}</span>
       {action}
     </div>
@@ -134,7 +141,7 @@ export function EmptyState({ icon, title, description, action }: EmptyStateProps
   );
 }
 
-type ButtonProps = {
+type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   children: ReactNode;
   variant?: "primary" | "secondary" | "ghost";
   size?: "sm" | "md";
@@ -145,7 +152,9 @@ export function Button({
   children, 
   variant = "primary", 
   size = "md",
-  className = "" 
+  className = "",
+  type = "button",
+  ...buttonProps
 }: ButtonProps) {
   const baseClasses = "inline-flex items-center justify-center font-medium rounded-full transition-colors";
   
@@ -161,7 +170,11 @@ export function Button({
   };
   
   return (
-    <button className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}>
+    <button
+      type={type}
+      className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+      {...buttonProps}
+    >
       {children}
     </button>
   );
@@ -182,7 +195,7 @@ export function Card({ children, className = "", padding = "md" }: CardProps) {
   };
   
   return (
-    <div className={`rounded-2xl border border-border bg-white ${paddingClasses[padding]} ${className}`}>
+    <div className={`rounded-none border border-border bg-white ${paddingClasses[padding]} ${className}`}>
       {children}
     </div>
   );
@@ -195,7 +208,7 @@ type CardGroupProps = {
 
 export function CardGroup({ children, className = "" }: CardGroupProps) {
   return (
-    <div className={`rounded-2xl border border-border bg-white overflow-hidden ${className}`}>
+    <div className={`rounded-none border border-border bg-white overflow-hidden ${className}`}>
       {children}
     </div>
   );
@@ -233,7 +246,7 @@ type StatCardProps = {
 
 export function StatCard({ label, value, icon }: StatCardProps) {
   return (
-    <div className="flex items-center gap-3 p-4 rounded-2xl bg-accent-light/40 border border-border/50">
+    <div className="flex items-center gap-3 p-4 rounded-none bg-accent-light/40 border border-border/50">
       {icon && (
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-accent">
           {icon}
