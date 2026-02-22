@@ -1,6 +1,8 @@
 import {
   boolean,
   index,
+  integer,
+  jsonb,
   pgTable,
   text,
   timestamp,
@@ -103,5 +105,49 @@ export const verification = pgTable(
   (table) => [
     uniqueIndex("verification_value_unique_idx").on(table.value),
     index("verification_identifier_idx").on(table.identifier),
+  ],
+);
+
+export const conversation = pgTable(
+  "conversation",
+  {
+    id: text("id").primaryKey(),
+    user_id: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    title: text("title").notNull().default("New conversation"),
+    created_at: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updated_at: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("conversation_user_id_idx").on(table.user_id),
+    index("conversation_created_at_idx").on(table.created_at),
+  ],
+);
+
+export const message = pgTable(
+  "message",
+  {
+    id: text("id").primaryKey(),
+    conversation_id: text("conversation_id")
+      .notNull()
+      .references(() => conversation.id, { onDelete: "cascade" }),
+    role: text("role").notNull(),
+    content: jsonb("content").notNull(),
+    sequence: integer("sequence").notNull(),
+    created_at: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("message_conversation_id_idx").on(table.conversation_id),
+    index("message_conversation_sequence_idx").on(
+      table.conversation_id,
+      table.sequence,
+    ),
   ],
 );

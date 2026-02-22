@@ -68,11 +68,16 @@ body {
 }
 
 input,
+textarea,
 button {
   border-radius: 8px;
   border: 1px solid #a8bad6;
   padding: 10px 12px;
   font: inherit;
+}
+
+textarea {
+  resize: vertical;
 }
 
 button {
@@ -96,7 +101,88 @@ button:disabled {
   max-height: calc(100vh - 160px);
 }
 
-/* Badges */
+.tabbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.tab {
+  border: 1px solid #9fb4d6;
+  background: #eef4ff;
+  color: #1b365d;
+}
+
+.tab.active {
+  background: #10233f;
+  border-color: #10233f;
+  color: #fff;
+}
+
+.chat-form {
+  margin-top: 8px;
+}
+
+.chat-status {
+  margin-top: 12px;
+  font-size: 0.9rem;
+  padding: 8px 10px;
+  border: 1px solid #d9e2f2;
+  border-radius: 8px;
+  background: #f6f9ff;
+}
+
+.chat-status span {
+  font-weight: 600;
+}
+
+.chat-transcript {
+  margin-top: 12px;
+  max-height: 520px;
+  overflow: auto;
+  display: grid;
+  gap: 10px;
+  padding-right: 4px;
+}
+
+.chat-bubble {
+  border-radius: 12px;
+  border: 1px solid #d9e2f2;
+  padding: 10px 12px;
+  background: #fff;
+}
+
+.chat-bubble header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.75rem;
+  margin-bottom: 8px;
+}
+
+.chat-bubble p {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.chat-bubble.user {
+  background: #eff5ff;
+  border-color: #c9daf5;
+}
+
+.chat-bubble.assistant {
+  background: #f6ffef;
+  border-color: #d3eccc;
+}
+
+.chat-bubble.system,
+.chat-bubble.error {
+  background: #fff5f0;
+  border-color: #f2c7b4;
+}
+
 .badge {
   display: inline-block;
   font-size: 0.7em;
@@ -113,14 +199,12 @@ button:disabled {
   color: #856404;
 }
 
-/* Hints */
 .hint {
   font-size: 0.85em;
   color: #5a6f8a;
   margin: 4px 0 0;
 }
 
-/* Security header grid */
 .header-grid {
   display: grid;
   gap: 4px;
@@ -166,6 +250,10 @@ button:disabled {
   }
 
   .output pre {
+    max-height: 420px;
+  }
+
+  .chat-transcript {
     max-height: 420px;
   }
 }
