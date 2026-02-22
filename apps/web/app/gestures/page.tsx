@@ -41,10 +41,10 @@ export default function GesturesPage() {
   const { data: peopleData } = useApi(() => api.people.list(), []);
   const { data: overdueData } = useApi(() => api.gestures.overdue(), []);
 
-  const allGestures = gesturesData?.data ?? [];
-  const templates = templatesData?.data ?? [];
-  const people = peopleData?.data ?? [];
-  const overdueGestures = overdueData?.data ?? [];
+  const allGestures = useMemo(() => gesturesData?.data ?? [], [gesturesData?.data]);
+  const templates = useMemo(() => templatesData?.data ?? [], [templatesData?.data]);
+  const people = useMemo(() => peopleData?.data ?? [], [peopleData?.data]);
+  const overdueGestures = useMemo(() => overdueData?.data ?? [], [overdueData?.data]);
   const personNameById = useMemo(
     () => new Map(people.map((person) => [person.id, person.display_name])),
     [people],

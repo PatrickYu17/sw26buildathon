@@ -16,7 +16,6 @@ const DEFAULT_NOTIFICATION_SETTINGS = {
 
 const DEFAULT_USER_PREFERENCES = {
   theme: "system",
-  language: "en",
 };
 
 export async function getNotificationSettings(userId: string) {
@@ -82,12 +81,11 @@ export async function getUserPreferences(userId: string) {
 
 export async function upsertUserPreferences(
   userId: string,
-  data: { theme?: string; language?: string },
+  data: { theme?: string },
 ) {
   const values = {
     user_id: userId,
     theme: data.theme ?? DEFAULT_USER_PREFERENCES.theme,
-    language: data.language ?? DEFAULT_USER_PREFERENCES.language,
     updated_at: new Date(),
   };
 

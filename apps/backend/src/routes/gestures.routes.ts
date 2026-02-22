@@ -55,6 +55,13 @@ function getUserId(req: Express.Request): string {
   return userId;
 }
 
+function parseLimit(input: unknown, fallback = 10) {
+  if (typeof input !== "string") return fallback;
+  const parsed = Number.parseInt(input, 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(1, Math.min(parsed, 200));
+}
+
 export const gesturesRouter = Router();
 
 gesturesRouter.get("/", async (req, res, next) => {
@@ -74,7 +81,7 @@ gesturesRouter.get("/", async (req, res, next) => {
 gesturesRouter.get("/upcoming", async (req, res, next) => {
   try {
     const userId = getUserId(req);
-    const limit = req.query.limit ? Number(req.query.limit) : 10;
+    const limit = parseLimit(req.query.limit, 10);
     const data = await gesturesService.getUpcomingGestures(userId, limit);
     res.json({ data });
   } catch (error) {

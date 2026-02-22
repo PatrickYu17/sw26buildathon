@@ -16,7 +16,6 @@ const NotificationSettingsSchema = z.object({
 
 const UserPreferencesSchema = z.object({
   theme: z.string().optional(),
-  language: z.string().optional(),
 });
 
 const ProfileSchema = z.object({

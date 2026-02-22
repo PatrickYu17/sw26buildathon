@@ -39,6 +39,13 @@ function getUserId(req: Express.Request): string {
   return userId;
 }
 
+function parseLimit(input: unknown, fallback = 20) {
+  if (typeof input !== "string") return fallback;
+  const parsed = Number.parseInt(input, 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(1, Math.min(parsed, 200));
+}
+
 export const notesRouter = Router({ mergeParams: true });
 
 // GET /api/v1/people/:personId/notes
@@ -46,7 +53,7 @@ notesRouter.get("/people/:personId/notes", async (req, res, next) => {
   try {
     const userId = getUserId(req);
     const search = typeof req.query.search === "string" ? req.query.search : undefined;
-    const limit = req.query.limit ? Number(req.query.limit) : 50;
+    const limit = parseLimit(req.query.limit, 50);
     const offset = req.query.offset ? Number(req.query.offset) : 0;
     const result = await notesService.listNotes(req.params.personId, userId, { search, limit, offset });
     res.json(result);
@@ -107,7 +114,7 @@ notesRouter.get("/notes/search", async (req, res, next) => {
   try {
     const userId = getUserId(req);
     const q = typeof req.query.q === "string" ? req.query.q : "";
-    const limit = req.query.limit ? Number(req.query.limit) : 20;
+    const limit = parseLimit(req.query.limit, 20);
     if (!q) {
       res.json({ data: [] });
       return;

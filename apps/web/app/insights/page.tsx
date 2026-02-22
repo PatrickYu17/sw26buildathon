@@ -12,7 +12,7 @@ export default function InsightsPage() {
   const { data: peopleData } = useApi(() => api.people.list(), []);
 
   const dash = dashData?.data;
-  const completedGestures = gesturesData?.data ?? [];
+  const completedGestures = useMemo(() => gesturesData?.data ?? [], [gesturesData?.data]);
   const people: Person[] = peopleData?.data ?? [];
   const now = useMemo(() => new Date(), []);
 

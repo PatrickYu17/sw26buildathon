@@ -145,7 +145,6 @@ export type NotificationSettings = {
 export type UserPreferences = {
   user_id: Id;
   theme: string;
-  language: string;
   updated_at?: string;
 };
 

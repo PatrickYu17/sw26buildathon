@@ -1,5 +1,5 @@
 import { eq, and, desc } from "drizzle-orm";
-import { importsInstagramDm, notes } from "@hackathon/db";
+import { importsInstagramDm, notes, people } from "@hackathon/db";
 import { db } from "../lib/db";
 import { HttpError } from "../middleware/error-handler";
 
@@ -66,6 +66,16 @@ export async function createNotesFromImport(
   personId: string,
 ) {
   const importRecord = await getImport(importId, userId);
+  const [person] = await db
+    .select()
+    .from(people)
+    .where(eq(people.id, personId));
+  if (!person) {
+    throw new HttpError(404, "not_found", "Person not found");
+  }
+  if (person.user_id !== userId) {
+    throw new HttpError(403, "forbidden", "You do not own this person record");
+  }
 
   // Try to extract messages from parsed data
   let messages: Array<{ content: string; timestamp?: string }> = [];

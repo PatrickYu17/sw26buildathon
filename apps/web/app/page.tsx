@@ -47,7 +47,7 @@ export default function Home() {
     [selectedPersonId],
   );
 
-  const people = peopleData?.data ?? [];
+  const people = useMemo(() => peopleData?.data ?? [], [peopleData?.data]);
   const dash = dashData?.data;
   const prefs = prefData?.data ?? { likes: [], dislikes: [] };
   const notes = notesData?.data ?? [];

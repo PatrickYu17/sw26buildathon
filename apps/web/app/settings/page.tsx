@@ -6,6 +6,26 @@ import { NotificationsSettingsCard } from "@/app/settings/components/Notificatio
 import { api } from "@/app/lib/api";
 import { useApi } from "@/app/lib/hooks/use-api";
 
+function applyThemePreference(theme: string) {
+  if (typeof document === "undefined") return;
+  const root = document.documentElement;
+  if (theme === "dark") {
+    root.classList.add("dark");
+    root.classList.remove("light");
+    root.setAttribute("data-theme", "dark");
+    return;
+  }
+  if (theme === "light") {
+    root.classList.add("light");
+    root.classList.remove("dark");
+    root.setAttribute("data-theme", "light");
+    return;
+  }
+  root.classList.remove("dark");
+  root.classList.add("light");
+  root.setAttribute("data-theme", "light");
+}
+
 export default function SettingsPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -14,7 +34,6 @@ export default function SettingsPage() {
   const [profileMsg, setProfileMsg] = useState("");
 
   const [theme, setTheme] = useState("system");
-  const [language, setLanguage] = useState("en");
   const [prefsSaving, setPrefsSaving] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState("");
@@ -47,8 +66,9 @@ export default function SettingsPage() {
     try {
       const res = await api.settings.getPreferences();
       if (res.data) {
-        setTheme(res.data.theme || "system");
-        setLanguage(res.data.language || "en");
+        const resolvedTheme = res.data.theme || "system";
+        setTheme(resolvedTheme);
+        applyThemePreference(resolvedTheme);
       }
     } catch {}
     return null;
@@ -69,10 +89,11 @@ export default function SettingsPage() {
   const handleSavePreferences = useCallback(async () => {
     setPrefsSaving(true);
     try {
-      await api.settings.updatePreferences({ theme, language });
+      await api.settings.updatePreferences({ theme });
+      applyThemePreference(theme);
     } catch {}
     setPrefsSaving(false);
-  }, [theme, language]);
+  }, [theme]);
 
   const handleChangePassword = useCallback(async () => {
     setPasswordMsg("");
@@ -149,14 +170,6 @@ export default function SettingsPage() {
                   <option value="system">System</option>
                   <option value="light">Light</option>
                   <option value="dark">Dark</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-slate-500">Language</label>
-                <select value={language} onChange={(e) => setLanguage(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-300">
-                  <option value="en">English</option>
-                  <option value="es">Spanish</option>
-                  <option value="fr">French</option>
                 </select>
               </div>
               <div className="flex justify-end">

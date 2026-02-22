@@ -17,6 +17,7 @@
     "dev:debug": "turbo run dev --filter=debug",
     "dev:web": "turbo run dev --filter=web",
     "lint": "turbo run lint",
+    "check": "turbo run lint build --filter=backend --filter=debug",
     "clean": "turbo run clean",
     "start:backend": "turbo run start --filter=backend",
     "start:debug": "turbo run start --filter=debug",

@@ -38,6 +38,13 @@ function getUserId(req: Express.Request): string {
   return userId;
 }
 
+function parseLimit(input: unknown, fallback = 10) {
+  if (typeof input !== "string") return fallback;
+  const parsed = Number.parseInt(input, 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(1, Math.min(parsed, 200));
+}
+
 export const eventsRouter = Router({ mergeParams: true });
 
 // GET /api/v1/people/:personId/events
@@ -122,7 +129,7 @@ eventsRouter.get("/events/range", async (req, res, next) => {
 eventsRouter.get("/events/upcoming", async (req, res, next) => {
   try {
     const userId = getUserId(req);
-    const limit = req.query.limit ? Number(req.query.limit) : 10;
+    const limit = parseLimit(req.query.limit, 10);
     const rows = await eventsService.getUpcomingEvents(userId, limit);
     const data = rows.map((r) => ({ ...r.event, person: r.person }));
     res.json({ data });

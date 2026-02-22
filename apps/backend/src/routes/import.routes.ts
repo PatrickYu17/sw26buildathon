@@ -29,6 +29,13 @@ function getUserId(req: Express.Request): string {
   return userId;
 }
 
+function parseLimit(input: unknown, fallback = 20) {
+  if (typeof input !== "string") return fallback;
+  const parsed = Number.parseInt(input, 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(1, Math.min(parsed, 200));
+}
+
 export const importRouter = Router();
 
 // POST /api/v1/imports/instagram
@@ -48,7 +55,7 @@ importRouter.get("/", async (req, res, next) => {
   try {
     const userId = getUserId(req);
     const status = typeof req.query.status === "string" ? req.query.status : undefined;
-    const limit = req.query.limit ? Number(req.query.limit) : 20;
+    const limit = parseLimit(req.query.limit, 20);
     const data = await importService.listImports(userId, { status, limit });
     res.json({ data });
   } catch (error) {

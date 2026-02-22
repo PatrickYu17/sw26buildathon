@@ -26,6 +26,7 @@ export default function CompanionPage() {
   const [askInput, setAskInput] = useState("");
   const [messages, setMessages] = useState<UiMessage[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [selectedPersonId, setSelectedPersonId] = useState("all");
   const [sending, setSending] = useState(false);
   const [loadingConversation, setLoadingConversation] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,8 +38,13 @@ export default function CompanionPage() {
     () => api.conversations.list(),
     [],
   );
+  const { data: peopleData } = useApi(() => api.people.list(), []);
 
-  const conversations = conversationsData?.conversations ?? [];
+  const conversations = useMemo(
+    () => conversationsData?.conversations ?? [],
+    [conversationsData?.conversations],
+  );
+  const people = useMemo(() => peopleData?.data ?? [], [peopleData?.data]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -99,8 +105,9 @@ export default function CompanionPage() {
 
     try {
       const conversationId = await ensureConversationId();
+      const context = await buildConversationContext();
 
-      for await (const chunk of api.conversations.sendMessageStream(conversationId, { content })) {
+      for await (const chunk of api.conversations.sendMessageStream(conversationId, { content, context })) {
         if (chunk.error) {
           throw new Error(chunk.error);
         }
@@ -151,6 +158,60 @@ export default function CompanionPage() {
     setError(null);
     setAskInput("");
     askInputRef.current?.focus();
+  }
+
+  async function buildConversationContext() {
+    if (!selectedPersonId || selectedPersonId === "all") {
+      return undefined;
+    }
+
+    const person = people.find((item) => item.id === selectedPersonId);
+    if (!person) {
+      return undefined;
+    }
+
+    try {
+      const nowIso = new Date().toISOString();
+      const thirtyDaysFromNowIso = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+      const [preferences, upcomingEvents, recentGestures] = await Promise.all([
+        api.preferences.summary(selectedPersonId),
+        api.events.forPerson(selectedPersonId, { from: nowIso, to: thirtyDaysFromNowIso }),
+        api.gestures.list({ person_id: selectedPersonId }),
+      ]);
+
+      return {
+        person: {
+          id: person.id,
+          displayName: person.display_name,
+          relationshipType: person.relationship_type ?? undefined,
+          notes: person.notes ?? undefined,
+        },
+        preferences: {
+          likes: preferences.data.likes,
+          dislikes: preferences.data.dislikes,
+        },
+        upcomingEvents: upcomingEvents.data.slice(0, 10).map((event) => ({
+          title: event.title,
+          date: event.start_at,
+          type: event.event_type ?? undefined,
+        })),
+        recentGestures: recentGestures.data.slice(0, 10).map((gesture) => ({
+          title: gesture.title,
+          status: gesture.status,
+          dueAt: gesture.due_at ?? undefined,
+        })),
+      };
+    } catch {
+      return {
+        person: {
+          id: person.id,
+          displayName: person.display_name,
+          relationshipType: person.relationship_type ?? undefined,
+          notes: person.notes ?? undefined,
+        },
+      };
+    }
   }
 
   return (
@@ -271,7 +332,10 @@ export default function CompanionPage() {
               options={[
                 { value: "", label: "Select Person", disabled: true },
                 { value: "all", label: "All People" },
+                ...people.map((person) => ({ value: person.id, label: person.display_name })),
               ]}
+              value={selectedPersonId}
+              onChange={setSelectedPersonId}
             />
             {selectedConversation && (
               <p className="mt-2 text-xs text-slate-500">Active: {selectedConversation.title}</p>

@@ -12,6 +12,7 @@ type PersonDropdownProps = {
   id: string;
   label: string;
   options: PersonOption[];
+  value?: string;
   defaultValue?: string;
   className?: string;
   onChange?: (value: string) => void;
@@ -44,6 +45,7 @@ export function PersonDropdown({
   id,
   label,
   options,
+  value,
   defaultValue = "",
   className = "",
   onChange,
@@ -94,8 +96,10 @@ export function PersonDropdown({
     };
   }, [isOpen]);
 
-  const effectiveSelectedValue = options.some((option) => option.value === selectedValue)
-    ? selectedValue
+  const isControlled = value !== undefined;
+  const selectedValueForRender = isControlled ? value : selectedValue;
+  const effectiveSelectedValue = options.some((option) => option.value === selectedValueForRender)
+    ? selectedValueForRender
     : initialValue;
   const selectedOption = options.find((option) => option.value === effectiveSelectedValue) ?? options[0];
   const listboxId = `${id}-listbox`;
@@ -151,7 +155,9 @@ export function PersonDropdown({
       event.preventDefault();
       const option = options[highlightedIndex];
       if (option && !option.disabled) {
-        setSelectedValue(option.value);
+        if (!isControlled) {
+          setSelectedValue(option.value);
+        }
         onChange?.(option.value);
       }
       setIsOpen(false);
@@ -227,7 +233,9 @@ export function PersonDropdown({
                       if (option.disabled) {
                         return;
                       }
-                      setSelectedValue(option.value);
+                      if (!isControlled) {
+                        setSelectedValue(option.value);
+                      }
                       onChange?.(option.value);
                       setIsOpen(false);
                       buttonRef.current?.focus();

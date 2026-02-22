@@ -1,6 +1,6 @@
 "use client";
 
-import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PageShell, Card, Section, EmptyState, Button } from "@/app/components/PageShell";
 import { fetchEventsByDateForRange, type CalendarEvent } from "@/app/schedule/calendar-events";
 import { api } from "@/app/lib/api";
@@ -37,7 +37,15 @@ function formatDateKey(dateKey: string): string {
   });
 }
 
-function EventList({ events, onDelete }: { events: CalendarEvent[]; onDelete: (id: string) => void }) {
+function EventList({
+  events,
+  onDelete,
+  onEdit,
+}: {
+  events: CalendarEvent[];
+  onDelete: (id: string) => void;
+  onEdit: (id: string, title: string) => Promise<void>;
+}) {
   return (
     <div className="space-y-3">
       {events.map((event) => (
@@ -54,7 +62,7 @@ function EventList({ events, onDelete }: { events: CalendarEvent[]; onDelete: (i
               onClick={() => {
                 const updatedTitle = window.prompt("Edit event title", event.title);
                 if (updatedTitle?.trim()) {
-                  void api.events.update(event.id, { title: updatedTitle.trim() });
+                  void onEdit(event.id, updatedTitle.trim());
                 }
               }}
             >
@@ -95,27 +103,30 @@ export default function SchedulePage() {
   const { data: peopleData } = useApi(() => api.people.list(), []);
   const people = peopleData?.data ?? [];
 
-  async function reloadEventsForVisibleMonth() {
+  const reloadEventsForVisibleMonth = useCallback(async () => {
     const monthStart = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), 1);
     const monthEnd = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 0, 23, 59, 59);
     const map = await fetchEventsByDateForRange(monthStart, monthEnd);
     setEventsByDateInMonth(map);
-  }
+  }, [visibleMonth]);
+
+  const reloadWeeklyEvents = useCallback(async () => {
+    const { start, end } = getWeekRange(selectedDate);
+    const map = await fetchEventsByDateForRange(start, end);
+    const events: WeeklyEvent[] = [];
+    for (const [dateKey, evts] of map.entries()) {
+      for (const event of evts) events.push({ dateKey, event });
+    }
+    setWeeklyEvents(events);
+  }, [selectedDate]);
 
   useEffect(() => {
     void reloadEventsForVisibleMonth();
-  }, [visibleMonth]);
+  }, [reloadEventsForVisibleMonth]);
 
   useEffect(() => {
-    const { start, end } = getWeekRange(selectedDate);
-    fetchEventsByDateForRange(start, end).then((map) => {
-      const events: WeeklyEvent[] = [];
-      for (const [dateKey, evts] of map.entries()) {
-        for (const event of evts) events.push({ dateKey, event });
-      }
-      setWeeklyEvents(events);
-    });
-  }, [selectedDate]);
+    void reloadWeeklyEvents();
+  }, [reloadWeeklyEvents]);
 
   const selectedDayEvents = eventsByDateInMonth.get(selectedDateKey) ?? [];
 
@@ -164,7 +175,7 @@ export default function SchedulePage() {
       });
       setNewEventTitle("");
       setNewEventDetails("");
-      await reloadEventsForVisibleMonth();
+      await Promise.all([reloadEventsForVisibleMonth(), reloadWeeklyEvents()]);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to create event.");
     } finally {
@@ -176,9 +187,19 @@ export default function SchedulePage() {
     setError(null);
     try {
       await api.events.delete(id);
-      await reloadEventsForVisibleMonth();
+      await Promise.all([reloadEventsForVisibleMonth(), reloadWeeklyEvents()]);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to delete event.");
+    }
+  }
+
+  async function handleEditEvent(id: string, title: string) {
+    setError(null);
+    try {
+      await api.events.update(id, { title });
+      await Promise.all([reloadEventsForVisibleMonth(), reloadWeeklyEvents()]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to edit event.");
     }
   }
 
@@ -254,7 +275,7 @@ export default function SchedulePage() {
           </Section>
 
           <Section title={formatSelectedDayTitle(selectedDate)}>
-            {selectedDayEvents.length > 0 ? <EventList events={selectedDayEvents} onDelete={handleDeleteEvent} /> : <Card padding="none"><EmptyState title="No events on this day" description="Pick another day or add a new event." /></Card>}
+            {selectedDayEvents.length > 0 ? <EventList events={selectedDayEvents} onDelete={handleDeleteEvent} onEdit={handleEditEvent} /> : <Card padding="none"><EmptyState title="No events on this day" description="Pick another day or add a new event." /></Card>}
           </Section>
 
           <Section title="This Week">
